@@ -1,9 +1,23 @@
 {
+  "name": "honest-gabes-marketplace",
+  "owner": {
+    "name": "Gabe",
+    "email": "gabe@signalnine.com"
+  },
+  "metadata": {
+    "description": "Gabe's custom Claude Code plugins including enhanced superpowers",
+    "version": "1.0.0"
+  },
   "plugins": [
     {
       "name": "superpowers",
-      "repository": "signalnine/superpowers",
-      "description": "Complete software development workflow with multi-reviewer code review (Claude/Gemini/Codex consensus)"
+      "source": {
+        "source": "url",
+        "url": "https://github.com/signalnine/superpowers.git"
+      },
+      "description": "Complete software development workflow with multi-reviewer code review (Claude/Gemini/Codex consensus)",
+      "version": "3.7.0",
+      "strict": true
     }
   ]
 }
