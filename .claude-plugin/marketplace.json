@@ -16,7 +16,7 @@
         "url": "https://github.com/signalnine/superpowers.git"
       },
       "description": "Complete software development workflow with multi-reviewer code review (Claude/Gemini/Codex consensus)",
-      "version": "3.10.0",
+      "version": "4.5.0",
       "strict": true
     }
   ]
