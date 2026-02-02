@@ -3,7 +3,7 @@
     {
       "name": "superpowers",
       "repository": "signalnine/superpowers",
-      "description": "Complete software development workflow with multi-agent consensus (Claude/Gemini/Codex), autonomous iteration (ralph-loop), and consensus autopilot for brainstorming"
+      "description": "Complete software development workflow with multi-agent consensus (Claude/Gemini/Codex), autonomous iteration (ralph-loop), and consensus autopilot. v4.5.0"
     }
   ]
 }
