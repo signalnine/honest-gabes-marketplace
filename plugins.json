@@ -4,6 +4,11 @@
       "name": "superpowers",
       "repository": "signalnine/superpowers",
       "description": "Complete software development workflow with multi-agent consensus (Claude/Gemini/Codex), autonomous iteration (ralph-loop), and consensus autopilot. v4.5.0"
+    },
+    {
+      "name": "metacog",
+      "repository": "signalnine/metacog",
+      "description": "Metacognitive compositional engine. Three primitives (become, drugs, ritual) compose into 15 transformation stratagems. Shift perspective, reframe problems, explore dangerous ideas safely. v5.1.0"
     }
   ]
 }
