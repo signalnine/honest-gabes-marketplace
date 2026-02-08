@@ -26,7 +26,7 @@
         "url": "https://github.com/signalnine/metacog.git"
       },
       "description": "Metacognitive compositional engine. Three primitives (become, drugs, ritual) compose into 15 transformation stratagems. Shift perspective, reframe problems, explore dangerous ideas safely.",
-      "version": "5.1.0",
+      "version": "5.2.0",
       "strict": true
     }
   ]
