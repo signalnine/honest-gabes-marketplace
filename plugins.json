@@ -1,8 +1,8 @@
 {
   "plugins": [
     {
-      "name": "superpowers",
-      "repository": "signalnine/superpowers",
+      "name": "conclave",
+      "repository": "signalnine/conclave",
       "description": "Complete software development workflow with multi-agent consensus (Claude/Gemini/Codex), autonomous iteration (ralph-loop), and consensus autopilot. v4.5.0"
     },
     {

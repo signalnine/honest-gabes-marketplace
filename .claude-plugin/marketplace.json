@@ -5,15 +5,15 @@
     "email": "gabe@signalnine.com"
   },
   "metadata": {
-    "description": "Gabe's custom Claude Code plugins including enhanced superpowers",
+    "description": "Gabe's custom Claude Code plugins including conclave",
     "version": "1.0.1"
   },
   "plugins": [
     {
-      "name": "superpowers",
+      "name": "conclave",
       "source": {
         "source": "url",
-        "url": "https://github.com/signalnine/superpowers.git"
+        "url": "https://github.com/signalnine/conclave.git"
       },
       "description": "Complete software development workflow with multi-reviewer code review (Claude/Gemini/Codex consensus)",
       "version": "4.5.0",
