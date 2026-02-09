@@ -16,7 +16,7 @@
         "url": "https://github.com/signalnine/conclave.git"
       },
       "description": "Complete software development workflow with multi-reviewer code review (Claude/Gemini/Codex consensus)",
-      "version": "5.0.0",
+      "version": "5.1.0",
       "strict": true
     },
     {
