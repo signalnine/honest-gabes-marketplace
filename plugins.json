@@ -9,6 +9,11 @@
       "name": "metacog",
       "repository": "signalnine/metacog",
       "description": "Metacognitive compositional engine. Three primitives (become, drugs, ritual) compose into 15 transformation stratagems. Shift perspective, reframe problems, explore dangerous ideas safely. v5.2.0"
+    },
+    {
+      "name": "tango-and-cash",
+      "repository": "signalnine/tango-and-cash",
+      "description": "Pair programming skill: Claude architects, Gemini CLI implements. TDD-verified workflow for driving Gemini as an implementation partner. v1.0.0"
     }
   ]
 }
