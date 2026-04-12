@@ -3,7 +3,7 @@
     {
       "name": "conclave",
       "repository": "signalnine/conclave",
-      "description": "Complete software development workflow with multi-agent consensus (Claude/Gemini/Codex), autonomous iteration (ralph-loop), and consensus autopilot. v10.0.0"
+      "description": "Core skills library for Claude Code: TDD, debugging, collaboration patterns, and proven techniques v10.0.1"
     },
     {
       "name": "metacog",
