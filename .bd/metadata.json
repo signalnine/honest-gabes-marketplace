@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "honest_gabes_marketplace",
+  "project_id": "335193d2-e4fe-41e4-a5f4-11ed0fc3decc"
+}
