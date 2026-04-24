@@ -28,6 +28,16 @@
       "description": "Metacognitive compositional engine. Three primitives (become, drugs, ritual) compose into 15 transformation stratagems. Shift perspective, reframe problems, explore dangerous ideas safely.",
       "version": "6.0.0",
       "strict": true
+    },
+    {
+      "name": "tango-and-cash",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/signalnine/tango-and-cash.git"
+      },
+      "description": "Pair programming skill: Gemini plans and implements, Claude orchestrates, verifies, and commits. Balanced token spend vs task completion.",
+      "version": "3.1.0",
+      "strict": true
     }
   ]
 }
