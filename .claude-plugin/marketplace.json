@@ -15,7 +15,7 @@
         "source": "url",
         "url": "https://github.com/signalnine/conclave.git"
       },
-      "description": "Complete software development workflow with multi-reviewer code review (Claude/Gemini/Codex consensus)",
+      "description": "Core skills library for Claude Code: TDD, debugging, collaboration patterns, and proven techniques",
       "version": "10.2.0",
       "strict": true
     },
@@ -25,7 +25,7 @@
         "source": "url",
         "url": "https://github.com/signalnine/metacog.git"
       },
-      "description": "Metacognitive compositional engine. Three primitives (become, drugs, ritual) compose into 15 transformation stratagems. Shift perspective, reframe problems, explore dangerous ideas safely.",
+      "description": "Metacognitive compositional engine. Five primitives compose into 15 transformation stratagems.",
       "version": "6.0.0",
       "strict": true
     },
@@ -35,7 +35,7 @@
         "source": "url",
         "url": "https://github.com/signalnine/tango-and-cash.git"
       },
-      "description": "Pair programming skill: Gemini plans and implements, Claude orchestrates, verifies, and commits. Balanced token spend vs task completion.",
+      "description": "Pair programming skill: Gemini thinks, Claude does -- minimize Claude token spend",
       "version": "3.1.0",
       "strict": true
     }

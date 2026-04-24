@@ -13,7 +13,7 @@
     {
       "name": "tango-and-cash",
       "repository": "signalnine/tango-and-cash",
-      "description": "Pair programming skill: Gemini plans and implements, Claude orchestrates, verifies, and commits. Balanced token spend vs task completion. v3.1.0"
+      "description": "Pair programming skill: Gemini thinks, Claude does -- minimize Claude token spend v3.1.0"
     }
   ]
 }
