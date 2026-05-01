@@ -85,7 +85,53 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Fetch upstream description
+        id: upstream
+        run: |
+          set -euo pipefail
+          NAME="${{ steps.info.outputs.name }}"
+          VERSION="${{ steps.info.outputs.version }}"
+
+          REPO=$(jq -r --arg name "$NAME" \
+            '.plugins[] | select(.name == $name) | .source.url' \
+            .claude-plugin/marketplace.json | sed 's|https://github.com/||;s|\.git$||')
+
+          if [ -z "$REPO" ] || [ "$REPO" = "null" ]; then
+            echo "::error::Plugin '$NAME' not found in marketplace.json"
+            exit 1
+          fi
+
+          # Try the v-prefixed tag first (current convention) then bare semver.
+          # Fall back to the default branch so a missing-tag plugin still gets the
+          # latest description rather than silently keeping a stale one.
+          UPSTREAM_DESC=""
+          for REF in "v$VERSION" "$VERSION" "HEAD"; do
+            if RAW=$(gh api "repos/$REPO/contents/.claude-plugin/plugin.json?ref=$REF" --jq '.content' 2>/dev/null); then
+              CANDIDATE=$(echo "$RAW" | base64 -d | jq -r '.description // ""')
+              if [ -n "$CANDIDATE" ] && [ "$CANDIDATE" != "null" ]; then
+                UPSTREAM_DESC="$CANDIDATE"
+                echo "Fetched upstream description from $REPO@$REF"
+                break
+              fi
+            fi
+          done
+
+          if [ -z "$UPSTREAM_DESC" ]; then
+            echo "::warning::Could not fetch upstream description for '$NAME'; description sync will be skipped"
+          fi
+
+          # Use a heredoc-style multi-line output so descriptions with special chars survive intact.
+          {
+            echo "description<<UPSTREAM_DESC_EOF"
+            echo "$UPSTREAM_DESC"
+            echo "UPSTREAM_DESC_EOF"
+          } >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Update marketplace.json and plugins.json
+        env:
+          UPSTREAM_DESC: ${{ steps.upstream.outputs.description }}
         run: |
           set -euo pipefail
           NAME="${{ steps.info.outputs.name }}"
@@ -96,27 +142,45 @@ jobs:
             '(.plugins[] | select(.name == $name)).version = $ver' \
             .claude-plugin/marketplace.json > tmp.json && mv tmp.json .claude-plugin/marketplace.json
 
+          # Sync marketplace.json description from upstream plugin.json (if fetched).
+          # marketplace.json descriptions are unversioned, so we copy the upstream value verbatim.
+          if [ -n "$UPSTREAM_DESC" ]; then
+            jq --arg name "$NAME" --arg desc "$UPSTREAM_DESC" \
+              '(.plugins[] | select(.name == $name)).description = $desc' \
+              .claude-plugin/marketplace.json > tmp.json && mv tmp.json .claude-plugin/marketplace.json
+          fi
+
           # Update embedded version in plugins.json description if the plugin is listed.
           # Use jq to check existence (exact match by name) instead of a substring grep.
           if jq -e --arg name "$NAME" '.plugins[] | select(.name == $name)' plugins.json > /dev/null; then
             OLD_DESC=$(jq -r --arg name "$NAME" \
               '.plugins[] | select(.name == $name) | .description' plugins.json)
 
-            # Match full semver including optional pre-release / build metadata so that
-            # 'v1.0.0-beta.1' is replaced cleanly rather than having only the 'v1.0.0' core swapped.
-            jq --arg name "$NAME" --arg ver "$VERSION" \
-              '(.plugins[] | select(.name == $name)).description |=
-                 sub("v[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?"; "v" + $ver)' \
-              plugins.json > tmp.json && mv tmp.json plugins.json
+            if [ -n "$UPSTREAM_DESC" ]; then
+              # Rewrite description from upstream + " v$VERSION" suffix so plugins.json
+              # tracks both the latest copy and the version marker check_sync.sh expects.
+              NEW_DESC="$UPSTREAM_DESC v$VERSION"
+              jq --arg name "$NAME" --arg desc "$NEW_DESC" \
+                '(.plugins[] | select(.name == $name)).description = $desc' \
+                plugins.json > tmp.json && mv tmp.json plugins.json
+            else
+              # No upstream description available: only swap the version marker in place.
+              # Match full semver including optional pre-release / build metadata so that
+              # 'v1.0.0-beta.1' is replaced cleanly rather than having only the 'v1.0.0' core swapped.
+              jq --arg name "$NAME" --arg ver "$VERSION" \
+                '(.plugins[] | select(.name == $name)).description |=
+                   sub("v[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?"; "v" + $ver)' \
+                plugins.json > tmp.json && mv tmp.json plugins.json
 
-            NEW_DESC=$(jq -r --arg name "$NAME" \
-              '.plugins[] | select(.name == $name) | .description' plugins.json)
+              NEW_DESC=$(jq -r --arg name "$NAME" \
+                '.plugins[] | select(.name == $name) | .description' plugins.json)
 
-            # jq sub() silently leaves the string unchanged when the regex doesn't match.
-            # Surface that as an error so drift can't be auto-committed.
-            if [ "$OLD_DESC" = "$NEW_DESC" ] && ! echo "$OLD_DESC" | grep -q "v$VERSION"; then
-              echo "::error::plugins.json description for '$NAME' has no vX.Y.Z marker; refusing to commit silent drift"
-              exit 1
+              # jq sub() silently leaves the string unchanged when the regex doesn't match.
+              # Surface that as an error so drift can't be auto-committed.
+              if [ "$OLD_DESC" = "$NEW_DESC" ] && ! echo "$OLD_DESC" | grep -q "v$VERSION"; then
+                echo "::error::plugins.json description for '$NAME' has no vX.Y.Z marker and no upstream description was fetched; refusing to commit silent drift"
+                exit 1
+              fi
             fi
           fi
 
