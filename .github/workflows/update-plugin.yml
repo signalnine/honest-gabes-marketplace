@@ -1,0 +1,156 @@
+name: Update plugin version
+
+on:
+  repository_dispatch:
+    types: [plugin-release]
+  workflow_dispatch:
+    inputs:
+      plugin_name:
+        description: "Plugin name (e.g. conclave, metacog)"
+        required: false
+      plugin_version:
+        description: "Version (e.g. 10.0.0) -- omit to auto-detect from latest release"
+        required: false
+
+concurrency:
+  group: update-plugin
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Determine plugin and version
+        id: info
+        run: |
+          set -euo pipefail
+
+          # From repository_dispatch
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            NAME="${{ github.event.client_payload.plugin_name }}"
+            VERSION="${{ github.event.client_payload.version }}"
+          # From workflow_dispatch
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            NAME="${{ github.event.inputs.plugin_name }}"
+            VERSION="${{ github.event.inputs.plugin_version }}"
+          fi
+
+          if [ -z "${NAME:-}" ]; then
+            echo "::error::No plugin name provided"
+            exit 1
+          fi
+
+          # Auto-detect version from latest release if not provided
+          if [ -z "${VERSION:-}" ]; then
+            # Look up the repo URL from marketplace.json
+            REPO=$(jq -r --arg name "$NAME" \
+              '.plugins[] | select(.name == $name) | .source.url' \
+              .claude-plugin/marketplace.json | sed 's|https://github.com/||;s|\.git$||')
+
+            if [ -z "$REPO" ] || [ "$REPO" = "null" ]; then
+              echo "::error::Plugin '$NAME' not found in marketplace.json"
+              exit 1
+            fi
+
+            # Prefer latest release (intent-marked); fall back to highest semver tag.
+            # Either way, sort by semver -- the GitHub tags API orders by creation time,
+            # which can pick a stale maintenance-branch tag over a newer main release.
+            if VERSION=$(gh release view --repo "$REPO" --json tagName --jq '.tagName' 2>/dev/null); then
+              :
+            else
+              VERSION=$(gh api "repos/$REPO/tags" --jq '.[].name' \
+                | grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+([-+].+)?$' \
+                | sort -V \
+                | tail -n 1)
+            fi
+            VERSION="${VERSION#v}"
+            echo "Auto-detected version: $VERSION"
+          fi
+
+          # Validate VERSION is a sane semver before writing it anywhere.
+          # gh + jq both exit 0 on empty results, so we have to check the value.
+          if [ -z "${VERSION:-}" ] || [ "$VERSION" = "null" ]; then
+            echo "::error::Could not determine a version for '$NAME' (no releases or tags found?)"
+            exit 1
+          fi
+          if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$'; then
+            echo "::error::Detected version '$VERSION' for '$NAME' is not a valid semver"
+            exit 1
+          fi
+
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update marketplace.json and plugins.json
+        run: |
+          set -euo pipefail
+          NAME="${{ steps.info.outputs.name }}"
+          VERSION="${{ steps.info.outputs.version }}"
+
+          # Update typed version in marketplace.json
+          jq --arg name "$NAME" --arg ver "$VERSION" \
+            '(.plugins[] | select(.name == $name)).version = $ver' \
+            .claude-plugin/marketplace.json > tmp.json && mv tmp.json .claude-plugin/marketplace.json
+
+          # Update embedded version in plugins.json description if the plugin is listed.
+          # Use jq to check existence (exact match by name) instead of a substring grep.
+          if jq -e --arg name "$NAME" '.plugins[] | select(.name == $name)' plugins.json > /dev/null; then
+            OLD_DESC=$(jq -r --arg name "$NAME" \
+              '.plugins[] | select(.name == $name) | .description' plugins.json)
+
+            # Match full semver including optional pre-release / build metadata so that
+            # 'v1.0.0-beta.1' is replaced cleanly rather than having only the 'v1.0.0' core swapped.
+            jq --arg name "$NAME" --arg ver "$VERSION" \
+              '(.plugins[] | select(.name == $name)).description |=
+                 sub("v[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?"; "v" + $ver)' \
+              plugins.json > tmp.json && mv tmp.json plugins.json
+
+            NEW_DESC=$(jq -r --arg name "$NAME" \
+              '.plugins[] | select(.name == $name) | .description' plugins.json)
+
+            # jq sub() silently leaves the string unchanged when the regex doesn't match.
+            # Surface that as an error so drift can't be auto-committed.
+            if [ "$OLD_DESC" = "$NEW_DESC" ] && ! echo "$OLD_DESC" | grep -q "v$VERSION"; then
+              echo "::error::plugins.json description for '$NAME' has no vX.Y.Z marker; refusing to commit silent drift"
+              exit 1
+            fi
+          fi
+
+      - name: Verify sync
+        run: |
+          set -euo pipefail
+          chmod +x scripts/check_sync.sh
+          scripts/check_sync.sh
+
+      - name: Commit and push
+        run: |
+          set -euo pipefail
+          NAME="${{ steps.info.outputs.name }}"
+          VERSION="${{ steps.info.outputs.version }}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add .claude-plugin/marketplace.json plugins.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+
+          git commit -m "chore: bump $NAME to v$VERSION"
+
+          # Concurrency: at workflow level we serialize, but if a human pushes a
+          # commit between checkout and push, retry with rebase a few times.
+          for attempt in 1 2 3; do
+            if git push; then
+              exit 0
+            fi
+            echo "Push failed (attempt $attempt); rebasing on origin/main..."
+            git pull --rebase origin main
+          done
+          echo "::error::Could not push after 3 rebase attempts"
+          exit 1
