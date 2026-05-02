@@ -8,7 +8,7 @@
     {
       "name": "metacog",
       "repository": "signalnine/metacog",
-      "description": "Metacognitive compositional engine. Twelve primitives compose into 22 transformation stratagems. v6.1.0"
+      "description": "Metacognitive compositional engine. Sixteen primitives compose into nineteen transformation stratagems. v6.5.1"
     },
     {
       "name": "tango-and-cash",
