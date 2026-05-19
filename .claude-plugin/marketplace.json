@@ -25,7 +25,7 @@
         "source": "url",
         "url": "https://github.com/signalnine/metacog.git"
       },
-      "description": "Metacognitive compositional engine. Five primitives compose into 15 transformation stratagems.",
+      "description": "Metacognitive compositional engine. Eighteen primitives compose into twenty-seven transformation stratagems.",
       "version": "6.8.1",
       "strict": true
     },
